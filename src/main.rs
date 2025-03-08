@@ -1,17 +1,18 @@
-use actix_web::{App, HttpServer, web, middleware, HttpResponse, Responder};
+use actix_web::{App, HttpServer, web, HttpResponse, Responder};
 use actix_web::middleware::Logger;
 use clap::Parser;
-use prometheus::{IntCounter, Encoder, TextEncoder, register_int_counter};
-use sysinfo::{System, SystemExt};
-use serde::{Deserialize, Serialize};
+use prometheus::{Encoder, TextEncoder};
+use sysinfo::System;
+use serde::Deserialize;
 use std::sync::{Arc, Mutex};
 
 #[derive(Parser, Debug)]
+#[clap(author, version, about)]
 struct Args {
-    #[clap(long, default_value = "9001")]
+    #[arg(long, default_value_t = 9001, value_name = "PORT")]
     api_port: u16,
 
-    #[clap(long, default_value = "3001")]
+    #[arg(long, default_value_t = 3001, value_name = "PORT")]
     orchestrator_port: u16,
 }
 
