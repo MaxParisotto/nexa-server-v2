@@ -1,0 +1,10 @@
+root:
+  level: info
+  appenders: [console]
+
+appenders:
+  console:
+    kind: console
+encoder:
+  kind: pattern
+  pattern: "[<l>][<d(%Y-%m-%d %H:%M:%S %Z)>] <m>"

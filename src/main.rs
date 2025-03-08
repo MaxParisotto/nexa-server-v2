@@ -1,10 +1,12 @@
 use actix_web::{App, HttpServer, web, HttpResponse, Responder};
-use actix_web::middleware::Logger;
 use clap::Parser;
 use prometheus::{Encoder, TextEncoder};
 use sysinfo::System;
 use serde::Deserialize;
 use std::sync::{Arc, Mutex};
+use log::info;
+use log4rs::init_file;
+use serde_json::json;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -28,6 +30,7 @@ struct ConfigForm {
 }
 
 async fn health_check() -> impl Responder {
+    info!("Health check requested");
     HttpResponse::Ok().body("Healthy")
 }
 
@@ -41,20 +44,49 @@ async fn metrics() -> impl Responder {
         .body(buffer)
 }
 
-async fn dashboard() -> &'static str {
-    r#"
+async fn dashboard() -> HttpResponse {
+    info!("Dashboard accessed");
+    let html = r#"
     <!DOCTYPE html>
     <html>
+    <head>
+        <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            .log-entry { border-bottom: 1px solid #ddd; padding: 10px; margin: 10px 0; }
+            .log-entry.error { background: #ffdddd; }
+            .log-entry.info { background: #ddffdd; }
+        </style>
+    </head>
     <body>
-        <h1>System Configuration</h1>
-        <form action="/save" method="post">
+        <h1>System Configuration & Logs</h1>
+        <div id="logs"></div>
+        <form action="/save" method="post" style="margin-top: 20px;">
             <label>Variable Name: <input type="text" name="name"></label><br>
             <label>Value: <input type="text" name="value"></label><br>
             <input type="submit" value="Save">
         </form>
+        <script>
+            function fetchLogs() {
+                fetch('/api/logs')
+                    .then(response => response.json())
+                    .then(data => {
+                        const logContainer = document.getElementById('logs');
+                        logContainer.innerHTML = '';
+                        data.forEach(entry => {
+                            const entryDiv = document.createElement('div');
+                            entryDiv.className = `log-entry ${entry.level.toLowerCase()}`;
+                            entryDiv.textContent = `[${entry.timestamp}] ${entry.message}`;
+                            logContainer.appendChild(entryDiv);
+                        });
+                    });
+            }
+            setInterval(fetchLogs, 2000);
+            fetchLogs();
+        </script>
     </body>
     </html>
-    "#
+    "#;
+    HttpResponse::Ok().body(html)
 }
 
 async fn save_config(
@@ -63,14 +95,30 @@ async fn save_config(
 ) -> impl Responder {
     let mut sys_info = data.sys_info.lock().unwrap();
     sys_info.refresh_all();
+    info!("Saved config {}: {}", form.name, form.value);
     HttpResponse::Ok().body(format!("Saved {}: {}", form.name, form.value))
+}
+
+async fn get_logs() -> impl Responder {
+    // Dummy logs for demonstration
+    let logs = vec![
+        json!({
+            "timestamp": "2025-03-08T16:35:00Z",
+            "level": "INFO",
+            "message": "System initialized"
+        }),
+        json!({
+            "timestamp": "2025-03-08T16:36:00Z",
+            "level": "WARN",
+            "message": "High memory usage detected"
+        })
+    ];
+    HttpResponse::Ok().json(logs)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init_from_env(
-        env_logger::Env::default().default_filter_or("info")
-    );
+    log4rs::init_file("log4rs.yaml", Default::default()).unwrap();
 
     let args = Args::parse();
 
@@ -81,15 +129,14 @@ async fn main() -> std::io::Result<()> {
         sys_info: sys_info.clone(),
     });
 
-    // API Server (9001)
     let api_server = HttpServer::new(move || {
         App::new()
             .app_data(state.clone())
-            .wrap(Logger::default())
             .service(
                 web::scope("/api")
                     .route("/health", web::get().to(health_check))
-                    .route("/metrics", web::get().to(metrics)),
+                    .route("/metrics", web::get().to(metrics))
+                    .route("/logs", web::get().to(get_logs)),
             )
             .service(
                 web::scope("/dashboard")
@@ -100,20 +147,14 @@ async fn main() -> std::io::Result<()> {
     .bind(("0.0.0.0", args.api_port))?
     .run();
 
-    // Orchestrator Server (3001)
     let orchestrator_server = HttpServer::new(|| {
         App::new()
-            .wrap(Logger::default())
             .route("/status", web::get().to(health_check))
     })
     .bind(("0.0.0.0", args.orchestrator_port))?
     .run();
 
-    // Run both servers concurrently
-    tokio::try_join!(
-        api_server,
-        orchestrator_server
-    )?;
+    tokio::try_join!(api_server, orchestrator_server)?;
 
     Ok(())
 }
