@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Information</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>System Information Dashboard</h1>
+
+    <% if (system) { %>
+        <div class="section">
+            <h2>User Information</h2>
+            <table>
+                <tr><th>Username:</th><td><%= system.username %></td></tr>
+                <tr><th>Login Shell:</th><td><%= system.shell %></td></tr>
+                <tr><th>Home Directory:</th><td><%= system.homedir %></td></tr>
+            </table>
+        </div>
+    <% } %>
+
+    <div class="section">
+        <h2>CPU Details</h2>
+        <table>
+            <tr><th>Model:</th><td><%= cpu.model %></td></tr>
+            <tr><th>Cores:</th><td><%= cpu.cores %></td></tr>
+            <tr><th>Speed:</th><td><%= cpu.speed %> GHz</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Memory Usage</h2>
+        <table>
+            <tr><th>Total Memory:</th><td><%= memory.total %> MB</td></tr>
+            <tr><th>Free Memory:</th><td><%= memory.free %> MB</td></tr>
+            <tr><th>Used Memory:</th><td><%= memory.used %> MB</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Storage Information</h2>
+        <table>
+            <% storage.forEach((partition) => { %>
+                <tr>
+                    <th>Mount:</th><td><%= partition.mount %></td>
+                </tr>
+                <tr>
+                    <th>Total Space:</th><td><%= (partition.size / 1024/1024).toFixed(2) %> GB</td>
+                </tr>
+                <tr>
+                    <th>Used Space:</th><td><%= ((partition.used / partition.size)*100).toFixed(1) %>%</td>
+                </tr>
+            <% }) %>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Network Interfaces</h2>
+        <ul>
+            <% networkInterfaces.forEach((interface) => { %>
+                <li><strong>Name:</strong> <%= interface.name %></li>
+                <li><strong>IPv4 Addresses:</strong> 
+                    <ul>
+                        <% interface.ipv4.forEach(ip => { %>
+                            <li><%= ip.address %>/<%= ip.netmask %></li>
+                        <% }) %>
+                    </ul>
+                </li>
+            <% }) %>
+        </ul>
+    </div>
+</body>
+</html>

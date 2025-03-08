@@ -1,0 +1,30 @@
+{
+  message: 'External API gateway listening on *:9001',
+  level: 'info',
+  timestamp: '2025-03-08T02:06:27.591Z'
+}
+{
+  message: 'Internal agent server listening on *:3001',
+  level: 'info',
+  timestamp: '2025-03-08T02:06:27.595Z'
+}
+{
+  message: 'Dashboard available at http://localhost:3000',
+  level: 'info',
+  timestamp: '2025-03-08T02:06:27.595Z'
+}
+{
+  message: 'External API gateway listening on *:9001',
+  level: 'info',
+  timestamp: '2025-03-08T02:32:43.609Z'
+}
+{
+  message: 'Internal agent server listening on *:3001',
+  level: 'info',
+  timestamp: '2025-03-08T02:32:43.612Z'
+}
+{
+  message: 'Dashboard available at http://localhost:3000',
+  level: 'info',
+  timestamp: '2025-03-08T02:32:43.613Z'
+}
